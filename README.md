@@ -1,16 +1,16 @@
 ## Test your memory and focus by repeating color sequences. How far can you go?
 
 <p float="left">
-   <img src="https://github.com/Saif64/echo_memory/blob/master/ss/image1.png" width="220" />
-  <img src="https://github.com/Saif64/echo_memory/blob/master/ss/image2.png" width="220" />
-  <img src="https://github.com/Saif64/echo_memory/blob/master/ss/image3.png" width="220" />
-  <img src="https://github.com/Saif64/echo_memory/blob/master/ss/image4.png" width="220" />
+   <img src="https://github.com/Saif64/echo_memory/blob/master/ss/image1.png" width="200" />
+  <img src="https://github.com/Saif64/echo_memory/blob/master/ss/image2.png" width="200" />
+  <img src="https://github.com/Saif64/echo_memory/blob/master/ss/image3.png" width="200" />
+  <img src="https://github.com/Saif64/echo_memory/blob/master/ss/image4.png" width="200" />
   <br>
   
-  <img src="https://github.com/Saif64/echo_memory/blob/master/ss/home.png" width="220" />
-  <img src="https://github.com/Saif64/echo_memory/blob/master/ss/daily.png" width="220" />
-  <img src="https://github.com/Saif64/echo_memory/blob/master/ss/diff.png" width="220" />
-  <img src="https://github.com/Saif64/echo_memory/blob/master/ss/game.png" width="220" />
+  <img src="https://github.com/Saif64/echo_memory/blob/master/ss/home.png" width="200" />
+  <img src="https://github.com/Saif64/echo_memory/blob/master/ss/daily.png" width="200" />
+  <img src="https://github.com/Saif64/echo_memory/blob/master/ss/diff.png" width="200" />
+  <img src="https://github.com/Saif64/echo_memory/blob/master/ss/game.png" width="200" />
  
 </p>
 

@@ -33,7 +33,7 @@ Train your memory and have fun! Download now and start playing! 🎮
 ## run:
 
 ```
-fvm use 3.19.6
+fvm use 3.29.0
 ```
 
 ```

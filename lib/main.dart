@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:audioplayers/audioplayers.dart'; // For sound effects
-import 'package:echo_memory/privacy_policy.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:echo_memory/core/utils/responsive_utils.dart';
+import 'package:echo_memory/ui/privacy_policy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:intl/intl.dart'; // For date formatting
-import 'package:shared_preferences/shared_preferences.dart'; // For storing daily challenge data
+
+import 'core/improvements/pattern_display.dart';
+import 'ui/daily_challenge_screen.dart';
+import 'ui/practice_screen.dart';
 
 void main() {
   runApp(const EchoMemoryApp());
@@ -37,6 +40,9 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Initialize responsive utilities
+    ResponsiveUtils.init(context);
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -47,94 +53,116 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: Center(
+          child: OrientationBuilder(
+            builder: (context, orientation) {
+              return orientation == Orientation.portrait
+                  ? _buildPortraitLayout(context)
+                  : _buildLandscapeLayout(context);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPortraitLayout(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildHeader(),
+          SizedBox(height: ResponsiveUtils.heightPercent(6)),
+          _buildNavigationCards(context),
+          SizedBox(height: ResponsiveUtils.heightPercent(2)),
+          _buildPrivacyPolicyButton(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLandscapeLayout(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(flex: 3, child: Center(child: _buildHeader())),
+        Expanded(
+          flex: 7,
+          child: SingleChildScrollView(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  'Echo Memory',
-                  style: TextStyle(
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    shadows: [
-                      Shadow(
-                        blurRadius: 10.0,
-                        color: Colors.black26,
-                        offset: Offset(5.0, 5.0),
-                      ),
-                    ],
-                  ),
-                ).animate().fadeIn(duration: 600.ms).scale(delay: 200.ms),
-                SizedBox(height: 60),
-                _buildNavigationCard(
-                  context,
-                  'Challenge Mode',
-                  Icons.emoji_events,
-                  Colors.orange[400]!,
-                  'Test your skills with timed challenges',
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const DifficultyScreen(),
-                    ),
-                  ),
-                  delay: 600,
-                ),
-                SizedBox(height: 20),
-                _buildNavigationCard(
-                  context,
-                  'Practice Mode',
-                  Icons.school,
-                  Colors.green[400]!,
-                  'Learn at your own pace without time limits',
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PracticeGameScreen(),
-                    ),
-                  ),
-                  delay: 800,
-                ),
-                SizedBox(height: 20),
-                _buildNavigationCard(
-                  context,
-                  'Daily Challenge',
-                  Icons.calendar_today,
-                  Colors.purple[400]!,
-                  'New challenge every day',
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => DailyChallengeScreen(),
-                    ),
-                  ),
-                  delay: 1000,
-                ),
-                SizedBox(height: 20),
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => PrivacyPolicyScreen(),
-                        ),
-                      );
-                    },
-                    child: Text(
-                      'Privacy Policy',
-
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ),
+                SizedBox(height: ResponsiveUtils.heightPercent(4)),
+                _buildNavigationCards(context),
+                SizedBox(height: ResponsiveUtils.heightPercent(2)),
+                _buildPrivacyPolicyButton(context),
               ],
             ),
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildHeader() {
+    return Text(
+      'Echo Memory',
+      style: TextStyle(
+        fontSize: ResponsiveUtils.fontSize(48),
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+        shadows: [
+          Shadow(
+            blurRadius: 10.0,
+            color: Colors.black26,
+            offset: Offset(5.0, 5.0),
+          ),
+        ],
       ),
+    ).animate().fadeIn(duration: 600.ms).scale(delay: 200.ms);
+  }
+
+  Widget _buildNavigationCards(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildNavigationCard(
+          context,
+          'Challenge Mode',
+          Icons.emoji_events,
+          Colors.orange[400]!,
+          'Test your skills with timed challenges',
+          () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const DifficultyScreen()),
+          ),
+          delay: 600,
+        ),
+        SizedBox(height: ResponsiveUtils.heightPercent(2)),
+        _buildNavigationCard(
+          context,
+          'Practice Mode',
+          Icons.school,
+          Colors.green[400]!,
+          'Learn at your own pace without time limits',
+          () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => PracticeGameScreen()),
+          ),
+          delay: 800,
+        ),
+        SizedBox(height: ResponsiveUtils.heightPercent(2)),
+        _buildNavigationCard(
+          context,
+          'Daily Challenge',
+          Icons.calendar_today,
+          Colors.purple[400]!,
+          'New challenge every day',
+          () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => DailyChallengeScreen()),
+          ),
+          delay: 1000,
+        ),
+      ],
     );
   }
 
@@ -148,7 +176,7 @@ class HomeScreen extends StatelessWidget {
     required int delay,
   }) {
     return Container(
-      width: 280,
+      width: ResponsiveUtils.getMinCardWidth(),
       child: Card(
         elevation: 8,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -157,26 +185,31 @@ class HomeScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           onTap: onTap,
           child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            padding: ResponsiveUtils.padding(vertical: 2, horizontal: 3),
             child: Column(
               children: [
-                Icon(icon, size: 40, color: Colors.white),
-                SizedBox(height: 12),
+                Icon(
+                  icon,
+                  size: ResponsiveUtils.fontSize(40),
+                  color: Colors.white,
+                ),
+                SizedBox(height: ResponsiveUtils.heightPercent(1)),
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: ResponsiveUtils.fontSize(24),
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
-                SizedBox(height: 8),
+                SizedBox(height: ResponsiveUtils.heightPercent(0.8)),
                 Text(
                   description,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: ResponsiveUtils.fontSize(16),
                     color: Colors.white.withOpacity(0.8),
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -185,14 +218,38 @@ class HomeScreen extends StatelessWidget {
       ),
     ).animate().fadeIn(delay: delay.ms).slideX(begin: 0.3, end: 0);
   }
+
+  Widget _buildPrivacyPolicyButton(BuildContext context) {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: TextButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => PrivacyPolicyScreen()),
+          );
+        },
+        child: Text(
+          'Privacy Policy',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: ResponsiveUtils.fontSize(14),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-// Existing Difficulty Screen - unchanged
+// Existing Difficulty Screen with responsive updates
 class DifficultyScreen extends StatelessWidget {
   const DifficultyScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Re-initialize responsive utils
+    ResponsiveUtils.init(context);
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -203,95 +260,139 @@ class DifficultyScreen extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Echo Memory',
-                  style: TextStyle(
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    shadows: [
-                      Shadow(
-                        blurRadius: 10.0,
-                        color: Colors.black26,
-                        offset: Offset(5.0, 5.0),
-                      ),
-                    ],
-                  ),
-                ).animate().fadeIn(duration: 600.ms).scale(delay: 200.ms),
-                SizedBox(height: 60),
-                Text(
-                  'Select Your Challenge',
-                  style: TextStyle(
-                    fontSize: 24,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.3, end: 0),
-                SizedBox(height: 40),
-                _buildDifficultyCard(
-                  context,
-                  'Beginner',
-                  Colors.green[400]!,
-                  'Perfect for learning',
-                  {
-                    'initialSequence': 3,
-                    'timeLimit': 10,
-                    'pointMultiplier': 1,
-                    'lives': 3,
-                  },
-                  delay: 600,
-                ),
-                SizedBox(height: 20),
-                _buildDifficultyCard(
-                  context,
-                  'Expert',
-                  Colors.orange[400]!,
-                  'For experienced players',
-                  {
-                    'initialSequence': 4,
-                    'timeLimit': 6,
-                    'pointMultiplier': 2,
-                    'lives': 2,
-                  },
-                  delay: 800,
-                ),
-                SizedBox(height: 20),
-                _buildDifficultyCard(
-                  context,
-                  'Master',
-                  Colors.red[400]!,
-                  'Ultimate challenge',
-                  {
-                    'initialSequence': 5,
-                    'timeLimit': 5,
-                    'pointMultiplier': 3,
-                    'lives': 1,
-                  },
-                  delay: 1000,
-                ),
-                SizedBox(height: 40),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text(
-                    'Back to Main Menu',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          child: OrientationBuilder(
+            builder: (context, orientation) {
+              return orientation == Orientation.portrait
+                  ? _buildPortraitLayout(context)
+                  : _buildLandscapeLayout(context);
+            },
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPortraitLayout(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildHeader(),
+          SizedBox(height: ResponsiveUtils.heightPercent(4)),
+          Text(
+            'Select Your Challenge',
+            style: TextStyle(
+              fontSize: ResponsiveUtils.fontSize(24),
+              color: Colors.white,
+              fontWeight: FontWeight.w500,
+            ),
+          ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.3, end: 0),
+          SizedBox(height: ResponsiveUtils.heightPercent(3)),
+          _buildDifficultyCards(context),
+          SizedBox(height: ResponsiveUtils.heightPercent(3)),
+          _buildBackButton(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLandscapeLayout(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 3,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildHeader(),
+              SizedBox(height: ResponsiveUtils.heightPercent(4)),
+              Text(
+                'Select Your Challenge',
+                style: TextStyle(
+                  fontSize: ResponsiveUtils.fontSize(24),
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.3, end: 0),
+              SizedBox(height: ResponsiveUtils.heightPercent(4)),
+              _buildBackButton(context),
+            ],
+          ),
+        ),
+        Expanded(
+          flex: 7,
+          child: Center(
+            child: SingleChildScrollView(child: _buildDifficultyCards(context)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeader() {
+    return Text(
+      'Echo Memory',
+      style: TextStyle(
+        fontSize: ResponsiveUtils.fontSize(48),
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+        shadows: [
+          Shadow(
+            blurRadius: 10.0,
+            color: Colors.black26,
+            offset: Offset(5.0, 5.0),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 600.ms).scale(delay: 200.ms);
+  }
+
+  Widget _buildDifficultyCards(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildDifficultyCard(
+          context,
+          'Beginner',
+          Colors.green[400]!,
+          'Perfect for learning',
+          {
+            'initialSequence': 3,
+            'timeLimit': 10,
+            'pointMultiplier': 1,
+            'lives': 3,
+          },
+          delay: 600,
+        ),
+        SizedBox(height: ResponsiveUtils.heightPercent(2)),
+        _buildDifficultyCard(
+          context,
+          'Expert',
+          Colors.orange[400]!,
+          'For experienced players',
+          {
+            'initialSequence': 4,
+            'timeLimit': 6,
+            'pointMultiplier': 2,
+            'lives': 2,
+          },
+          delay: 800,
+        ),
+        SizedBox(height: ResponsiveUtils.heightPercent(2)),
+        _buildDifficultyCard(
+          context,
+          'Master',
+          Colors.red[400]!,
+          'Ultimate challenge',
+          {
+            'initialSequence': 5,
+            'timeLimit': 5,
+            'pointMultiplier': 3,
+            'lives': 1,
+          },
+          delay: 1000,
+        ),
+      ],
     );
   }
 
@@ -304,7 +405,7 @@ class DifficultyScreen extends StatelessWidget {
     required int delay,
   }) {
     return Container(
-      width: 280,
+      width: ResponsiveUtils.getMinCardWidth(),
       child: Card(
         elevation: 8,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -322,24 +423,25 @@ class DifficultyScreen extends StatelessWidget {
             );
           },
           child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            padding: ResponsiveUtils.padding(vertical: 2, horizontal: 3),
             child: Column(
               children: [
                 Text(
                   difficulty,
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: ResponsiveUtils.fontSize(24),
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
-                SizedBox(height: 8),
+                SizedBox(height: ResponsiveUtils.heightPercent(0.8)),
                 Text(
                   description,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: ResponsiveUtils.fontSize(16),
                     color: Colors.white.withOpacity(0.8),
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -348,9 +450,25 @@ class DifficultyScreen extends StatelessWidget {
       ),
     ).animate().fadeIn(delay: delay.ms).slideX(begin: 0.3, end: 0);
   }
+
+  Widget _buildBackButton(BuildContext context) {
+    return TextButton(
+      onPressed: () {
+        Navigator.pop(context);
+      },
+      child: Text(
+        'Back to Main Menu',
+        style: TextStyle(
+          fontSize: ResponsiveUtils.fontSize(18),
+          color: Colors.white,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
 }
 
-// Sound Manager class to handle all sound effects
+// Sound Manager class - unchanged
 class SoundManager {
   static final SoundManager _instance = SoundManager._internal();
   factory SoundManager() => _instance;
@@ -373,8 +491,6 @@ class SoundManager {
 
   Future<void> playColorSound(int colorIndex) async {
     if (!_enabled) return;
-    // In a real app, these would be actual sound files
-    // Using different pitches for demonstration
     await _audioPlayer.play(AssetSource(_colorSounds[colorIndex]));
   }
 
@@ -403,7 +519,7 @@ class SoundManager {
   }
 }
 
-// Original GameScreen - unchanged except for adding sound effects and haptic feedback
+// Game Screen with responsive updates
 class GameScreen extends StatefulWidget {
   final String difficulty;
   final Map<String, int> settings;
@@ -584,7 +700,7 @@ class _GameScreenState extends State<GameScreen> {
               'Game Over!',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 28,
+                fontSize: ResponsiveUtils.fontSize(28),
                 fontWeight: FontWeight.bold,
                 color: Colors.red[400],
               ),
@@ -596,25 +712,25 @@ class _GameScreenState extends State<GameScreen> {
                     Text(
                       'Final Score: $score',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: ResponsiveUtils.fontSize(24),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 10),
+                    SizedBox(height: ResponsiveUtils.heightPercent(1)),
                     Text(
                       'Best Streak: $bestStreak',
-                      style: TextStyle(fontSize: 18),
+                      style: TextStyle(fontSize: ResponsiveUtils.fontSize(18)),
                     ),
                     Text(
                       'Sequence Length: ${sequence.length}',
-                      style: TextStyle(fontSize: 18),
+                      style: TextStyle(fontSize: ResponsiveUtils.fontSize(18)),
                     ),
-                    SizedBox(height: 20),
+                    SizedBox(height: ResponsiveUtils.heightPercent(2)),
                     if (score >= highScore && score > 0)
                       Text(
                         'New High Score! 🎉',
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: ResponsiveUtils.fontSize(20),
                           fontWeight: FontWeight.bold,
                           color: Colors.orange[400],
                         ),
@@ -628,7 +744,10 @@ class _GameScreenState extends State<GameScreen> {
                     MaterialPageRoute(builder: (context) => const HomeScreen()),
                   );
                 },
-                child: Text('Main Menu'),
+                child: Text(
+                  'Main Menu',
+                  style: TextStyle(fontSize: ResponsiveUtils.fontSize(16)),
+                ),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -647,7 +766,10 @@ class _GameScreenState extends State<GameScreen> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                child: Text('Try Again'),
+                child: Text(
+                  'Try Again',
+                  style: TextStyle(fontSize: ResponsiveUtils.fontSize(16)),
+                ),
               ),
             ],
           ),
@@ -656,6 +778,9 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Re-initialize responsive utils
+    ResponsiveUtils.init(context);
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -666,171 +791,239 @@ class _GameScreenState extends State<GameScreen> {
           ),
         ),
         child: SafeArea(
-          child: Stack(
-            children: [
-              Positioned(
-                left: 20,
-                top: 20,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Text(
-                    widget.difficulty,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ).animate().fadeIn().slideX(begin: -0.3, end: 0),
-              ),
-              Positioned(
-                right: 20,
-                top: 20,
-                child: Row(
-                  children: [
-                    for (int i = 0; i < lives; i++)
-                      Icon(
-                        Icons.favorite,
-                        color: Colors.red[400],
-                        size: 24,
-                      ).animate().fadeIn(delay: (i * 200).ms).scale(),
-                    SizedBox(width: 16),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Text(
-                        'Score: $score',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ).animate().fadeIn().slideX(begin: 0.3, end: 0),
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+          child: OrientationBuilder(
+            builder: (context, orientation) {
+              return Stack(
                 children: [
-                  if (!showPattern && isTimerRunning)
-                    Text(
-                      'Time Left: $_timeLeft',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: _timeLeft <= 2 ? Colors.red[400] : Colors.white,
-                      ),
-                    ).animate().fadeIn().scale(),
-                  SizedBox(height: 20),
-                  if (showPattern)
-                    Column(
-                      children: [
-                        Text(
-                          'Remember this pattern!',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ).animate().fadeIn().scale(),
-                        SizedBox(height: 30),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children:
-                              sequence.asMap().entries.map((entry) {
-                                return _buildColorBox(entry.value, entry.key);
-                              }).toList(),
-                        ),
-                      ],
-                    )
-                  else
-                    Column(
-                      children: [
-                        Text(
-                          'Select color ${currentIndex + 1} of ${sequence.length}',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        Text(
-                          'Current Streak: $currentStreak',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.white.withOpacity(0.8),
-                          ),
-                        ),
-                      ],
-                    ).animate().fadeIn().scale(),
-                  SizedBox(height: 40),
-                  Center(
-                    child: Container(
-                      constraints: BoxConstraints(maxWidth: 400),
-                      child: Wrap(
-                        spacing: 20,
-                        runSpacing: 20,
-                        alignment: WrapAlignment.center,
-                        children:
-                            colors
-                                .map((color) => _buildColorButton(color))
-                                .toList(),
-                      ),
-                    ),
-                  ),
-                  if (!showPattern)
-                    Padding(
-                          padding: EdgeInsets.only(top: 40),
-                          child: Column(
-                            children: [
-                              Text(
-                                'Best Streak: $bestStreak',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.white.withOpacity(0.8),
-                                ),
-                              ),
-                              if (currentStreak > 1)
-                                Text(
-                                  'Streak Bonus: x${currentStreak ~/ 2}',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.yellow,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ).animate().fadeIn().scale(),
-                            ],
-                          ),
-                        )
-                        .animate()
-                        .fadeIn(delay: 200.ms)
-                        .slideY(begin: 0.2, end: 0),
+                  _buildGameHeader(),
+                  orientation == Orientation.portrait
+                      ? _buildPortraitGameContent()
+                      : _buildLandscapeGameContent(),
                 ],
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),
     );
   }
 
+  Widget _buildGameHeader() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Padding(
+              padding: ResponsiveUtils.padding(horizontal: 2, vertical: 2),
+              child: Container(
+                padding: ResponsiveUtils.padding(horizontal: 2, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Text(
+                  widget.difficulty,
+                  style: TextStyle(
+                    fontSize: ResponsiveUtils.fontSize(18),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ).animate().fadeIn().slideX(begin: -0.3, end: 0),
+
+            Spacer(),
+
+            Row(
+              children: [
+                for (int i = 0; i < lives; i++)
+                  Icon(
+                    Icons.favorite,
+                    color: Colors.red[400],
+                    size: ResponsiveUtils.fontSize(24),
+                  ).animate().fadeIn(delay: (i * 200).ms).scale(),
+                SizedBox(width: ResponsiveUtils.widthPercent(2)),
+                Container(
+                  padding: ResponsiveUtils.padding(horizontal: 2, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Text(
+                    'Score: $score',
+                    style: TextStyle(
+                      fontSize: ResponsiveUtils.fontSize(18),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ).animate().fadeIn().slideX(begin: 0.3, end: 0),
+
+            SizedBox(width: ResponsiveUtils.widthPercent(2)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPortraitGameContent() {
+    return Center(
+      child: Padding(
+        padding: ResponsiveUtils.padding(horizontal: 4, vertical: 2),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (!showPattern && isTimerRunning)
+              Text(
+                'Time Left: $_timeLeft',
+                style: TextStyle(
+                  fontSize: ResponsiveUtils.fontSize(32),
+                  fontWeight: FontWeight.bold,
+                  color: _timeLeft <= 2 ? Colors.red[400] : Colors.white,
+                ),
+              ).animate().fadeIn().scale(),
+            SizedBox(height: ResponsiveUtils.heightPercent(2)),
+            if (showPattern) _buildPatternDisplay() else _buildGameStatus(),
+            SizedBox(height: ResponsiveUtils.heightPercent(4)),
+            _buildColorButtons(),
+            if (!showPattern)
+              Padding(
+                padding: ResponsiveUtils.padding(top: 4),
+                child: _buildStreakInfo(),
+              ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLandscapeGameContent() {
+    return Center(
+      child: Padding(
+        padding: ResponsiveUtils.padding(horizontal: 4, vertical: 2, top: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              flex: 5,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (!showPattern && isTimerRunning)
+                    Text(
+                      'Time Left: $_timeLeft',
+                      style: TextStyle(
+                        fontSize: ResponsiveUtils.fontSize(28),
+                        fontWeight: FontWeight.bold,
+                        color: _timeLeft <= 2 ? Colors.red[400] : Colors.white,
+                      ),
+                    ).animate().fadeIn().scale(),
+                  SizedBox(height: ResponsiveUtils.heightPercent(2)),
+                  if (showPattern)
+                    _buildPatternDisplay()
+                  else
+                    _buildGameStatus(),
+                  SizedBox(height: ResponsiveUtils.heightPercent(2)),
+                  if (!showPattern)
+                    _buildStreakInfo().animate().fadeIn(delay: 200.ms),
+                ],
+              ),
+            ),
+            Expanded(flex: 5, child: _buildColorButtons()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPatternDisplay() {
+    return ImprovedPatternDisplay(
+      sequence: sequence,
+      title: 'Remember this pattern!',
+      animateItems: true,
+      autoScroll: sequence.length > 6, // Auto-scroll when pattern gets long
+    );
+  }
+
+  Widget _buildGameStatus() {
+    return Column(
+      children: [
+        Text(
+          'Select color ${currentIndex + 1} of ${sequence.length}',
+          style: TextStyle(
+            fontSize: ResponsiveUtils.fontSize(24),
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        SizedBox(height: ResponsiveUtils.heightPercent(1)),
+        Text(
+          'Current Streak: $currentStreak',
+          style: TextStyle(
+            fontSize: ResponsiveUtils.fontSize(18),
+            color: Colors.white.withOpacity(0.8),
+          ),
+        ),
+      ],
+    ).animate().fadeIn().scale();
+  }
+
+  Widget _buildColorButtons() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          constraints: BoxConstraints(
+            maxWidth:
+                ResponsiveUtils.isLandscape
+                    ? ResponsiveUtils.widthPercent(50)
+                    : ResponsiveUtils.widthPercent(95),
+          ),
+          child: Wrap(
+            spacing: ResponsiveUtils.widthPercent(3),
+            runSpacing: ResponsiveUtils.heightPercent(2),
+            alignment: WrapAlignment.center,
+            children: colors.map((color) => _buildColorButton(color)).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStreakInfo() {
+    return Column(
+      children: [
+        Text(
+          'Best Streak: $bestStreak',
+          style: TextStyle(
+            fontSize: ResponsiveUtils.fontSize(18),
+            color: Colors.white.withOpacity(0.8),
+          ),
+        ),
+        if (currentStreak > 1)
+          Text(
+            'Streak Bonus: x${currentStreak ~/ 2}',
+            style: TextStyle(
+              fontSize: ResponsiveUtils.fontSize(16),
+              color: Colors.yellow,
+              fontWeight: FontWeight.bold,
+            ),
+          ).animate().fadeIn().scale(),
+      ],
+    );
+  }
+
   Widget _buildColorBox(Color color, int index) {
+    final boxSize =
+        ResponsiveUtils.isTablet
+            ? ResponsiveUtils.heightPercent(6)
+            : ResponsiveUtils.heightPercent(7);
+
     return Container(
-      width: 60,
-      height: 60,
-      margin: EdgeInsets.all(5),
+      width: boxSize,
+      height: boxSize,
+      margin: EdgeInsets.all(ResponsiveUtils.widthPercent(1)),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(12),
@@ -844,6 +1037,7 @@ class _GameScreenState extends State<GameScreen> {
   Widget _buildColorButton(Color color) {
     // Find the index of the color to play the corresponding sound
     int colorIndex = colors.indexOf(color);
+    final buttonSize = ResponsiveUtils.getGameButtonSize();
 
     return GestureDetector(
       onTap:
@@ -855,8 +1049,8 @@ class _GameScreenState extends State<GameScreen> {
               },
       child: AnimatedContainer(
         duration: Duration(milliseconds: 200),
-        width: 80,
-        height: 80,
+        width: buttonSize,
+        height: buttonSize,
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
@@ -874,809 +1068,5 @@ class _GameScreenState extends State<GameScreen> {
   }
 }
 
-// New Practice Mode Screen
-class PracticeGameScreen extends StatefulWidget {
-  @override
-  _PracticeGameScreenState createState() => _PracticeGameScreenState();
-}
-
-class _PracticeGameScreenState extends State<PracticeGameScreen> {
-  final List<Color> colors = [
-    Colors.red,
-    Colors.green,
-    Colors.blue,
-    Colors.yellow,
-    Colors.black,
-  ];
-  List<Color> sequence = [];
-  int currentIndex = 0;
-  bool showPattern = true;
-  bool revealPattern = false; // For showing pattern on demand
-  Random random = Random();
-  int sequenceLength = 3; // Starting sequence length
-  final SoundManager _soundManager = SoundManager();
-
-  @override
-  void initState() {
-    super.initState();
-    _generateSequence();
-  }
-
-  void _generateSequence() {
-    setState(() {
-      sequence = List.generate(
-        sequenceLength,
-        (_) => colors[random.nextInt(colors.length)],
-      );
-      showPattern = true;
-    });
-    _startPatternDisplay();
-  }
-
-  void _startPatternDisplay() {
-    Timer(const Duration(seconds: 3), () {
-      setState(() {
-        showPattern = false;
-      });
-    });
-  }
-
-  void _checkSelection(Color color) {
-    if (!showPattern && !revealPattern) {
-      if (sequence[currentIndex] == color) {
-        // Play correct sound and light haptic feedback
-        _soundManager.playCorrectSound();
-        HapticFeedback.lightImpact();
-
-        setState(() {
-          currentIndex++;
-
-          if (currentIndex == sequence.length) {
-            _nextLevel();
-          }
-        });
-      } else {
-        // Play wrong sound and heavy haptic feedback
-        _soundManager.playWrongSound();
-        HapticFeedback.heavyImpact();
-
-        _resetLevel();
-      }
-    }
-  }
-
-  void _resetLevel() {
-    setState(() {
-      currentIndex = 0;
-      showPattern = true;
-    });
-    _startPatternDisplay();
-  }
-
-  void _nextLevel() {
-    // Play victory sound for completing a level
-    _soundManager.playVictorySound();
-
-    setState(() {
-      sequenceLength++;
-      sequence = List.generate(
-        sequenceLength,
-        (_) => colors[random.nextInt(colors.length)],
-      );
-      currentIndex = 0;
-      showPattern = true;
-    });
-    _startPatternDisplay();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.green[300]!, Colors.teal[300]!],
-          ),
-        ),
-        child: SafeArea(
-          child: Stack(
-            children: [
-              // Back button
-              Positioned(
-                left: 20,
-                top: 20,
-                child: IconButton(
-                  icon: Icon(Icons.arrow_back, color: Colors.white, size: 30),
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                ),
-              ),
-
-              // Mode indicator
-              Positioned(
-                right: 20,
-                top: 20,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.school, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text(
-                        'Practice Mode',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (showPattern || revealPattern)
-                    Column(
-                      children: [
-                        Text(
-                          showPattern
-                              ? 'Remember this pattern!'
-                              : 'Pattern Revealed',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ).animate().fadeIn().scale(),
-                        SizedBox(height: 30),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children:
-                              sequence.asMap().entries.map((entry) {
-                                return _buildColorBox(entry.value, entry.key);
-                              }).toList(),
-                        ),
-                      ],
-                    )
-                  else
-                    Column(
-                      children: [
-                        Text(
-                          'Select color ${currentIndex + 1} of ${sequence.length}',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        Text(
-                          'Sequence Length: $sequenceLength',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.white.withOpacity(0.8),
-                          ),
-                        ),
-                      ],
-                    ).animate().fadeIn().scale(),
-                  SizedBox(height: 40),
-                  Center(
-                    child: Container(
-                      constraints: BoxConstraints(maxWidth: 400),
-                      child: Wrap(
-                        spacing: 20,
-                        runSpacing: 20,
-                        alignment: WrapAlignment.center,
-                        children:
-                            colors
-                                .map((color) => _buildColorButton(color))
-                                .toList(),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 40),
-
-                  // Reveal Pattern Button
-                  if (!showPattern)
-                    GestureDetector(
-                      onTapDown: (_) {
-                        setState(() {
-                          revealPattern = true;
-                        });
-                      },
-                      onTapUp: (_) {
-                        setState(() {
-                          revealPattern = false;
-                        });
-                      },
-                      onTapCancel: () {
-                        setState(() {
-                          revealPattern = false;
-                        });
-                      },
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.5),
-                            width: 2,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.visibility, color: Colors.white),
-                            SizedBox(width: 8),
-                            Text(
-                              'Hold to See Pattern',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ).animate().fadeIn().scale(),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildColorBox(Color color, int index) {
-    return Container(
-      width: 60,
-      height: 60,
-      margin: EdgeInsets.all(5),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(color: Colors.black26, offset: Offset(2, 2), blurRadius: 4),
-        ],
-      ),
-    ).animate().fadeIn(delay: (index * 200).ms).scale(delay: (index * 200).ms);
-  }
-
-  Widget _buildColorButton(Color color) {
-    // Find the index of the color to play the corresponding sound
-    int colorIndex = colors.indexOf(color);
-
-    return GestureDetector(
-      onTap:
-          (showPattern || revealPattern)
-              ? null
-              : () {
-                _soundManager.playColorSound(colorIndex);
-                _checkSelection(color);
-              },
-      child: AnimatedContainer(
-        duration: Duration(milliseconds: 200),
-        width: 80,
-        height: 80,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(width: 3, color: Colors.white.withOpacity(0.8)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              offset: Offset(3, 3),
-              blurRadius: 6,
-            ),
-          ],
-        ),
-      ),
-    ).animate().fadeIn().scale();
-  }
-}
-
-// Daily Challenge Screen
-class DailyChallengeScreen extends StatefulWidget {
-  @override
-  _DailyChallengeScreenState createState() => _DailyChallengeScreenState();
-}
-
-class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
-  final List<Color> colors = [
-    Colors.red,
-    Colors.green,
-    Colors.blue,
-    Colors.yellow,
-    Colors.purple,
-  ];
-  List<Color> sequence = [];
-  int currentIndex = 0;
-  bool showPattern = true;
-  Random random = Random();
-  int score = 0;
-  bool hasPlayedToday = false;
-  String todayDateStr = '';
-  int highScore = 0;
-  bool gameActive = false;
-  bool gameOver = false;
-  final SoundManager _soundManager = SoundManager();
-
-  @override
-  void initState() {
-    super.initState();
-    _loadDailyChallenge();
-  }
-
-  Future<void> _loadDailyChallenge() async {
-    final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now();
-    todayDateStr = DateFormat('yyyy-MM-dd').format(today);
-
-    final lastPlayedDate = prefs.getString('lastPlayedDate') ?? '';
-    hasPlayedToday = lastPlayedDate == todayDateStr;
-    highScore = prefs.getInt('dailyChallengeHighScore') ?? 0;
-
-    // Generate a deterministic sequence based on today's date
-    final seed = todayDateStr.hashCode;
-    random = Random(seed);
-
-    setState(() {
-      // If not played today, allow to play
-      if (!hasPlayedToday) {
-        _startGame();
-      }
-    });
-  }
-
-  void _startGame() {
-    setState(() {
-      gameActive = true;
-      gameOver = false;
-      score = 0;
-      _generateSequence();
-    });
-  }
-
-  void _generateSequence() {
-    setState(() {
-      // Start with 3 colors and increase as score grows
-      int length = 3 + (score ~/ 30);
-      sequence = List.generate(
-        length,
-        (_) => colors[random.nextInt(colors.length)],
-      );
-      showPattern = true;
-      currentIndex = 0;
-    });
-    _startPatternDisplay();
-  }
-
-  void _startPatternDisplay() {
-    Timer(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() {
-          showPattern = false;
-        });
-      }
-    });
-  }
-
-  void _checkSelection(Color color) {
-    if (!showPattern && gameActive) {
-      if (sequence[currentIndex] == color) {
-        // Play correct sound and light haptic feedback
-        _soundManager.playCorrectSound();
-        HapticFeedback.lightImpact();
-
-        setState(() {
-          currentIndex++;
-
-          if (currentIndex == sequence.length) {
-            score += sequence.length * 10;
-            _nextLevel();
-          }
-        });
-      } else {
-        // Play wrong sound and heavy haptic feedback
-        _soundManager.playWrongSound();
-        HapticFeedback.heavyImpact();
-
-        _endGame();
-      }
-    }
-  }
-
-  void _nextLevel() {
-    // Play victory sound for completing a level
-    _soundManager.playVictorySound();
-
-    _generateSequence();
-  }
-
-  Future<void> _endGame() async {
-    _soundManager.playGameOverSound();
-
-    setState(() {
-      gameActive = false;
-      gameOver = true;
-    });
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('lastPlayedDate', todayDateStr);
-
-    if (score > highScore) {
-      highScore = score;
-      await prefs.setInt('dailyChallengeHighScore', highScore);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.purple[300]!, Colors.indigo[400]!],
-          ),
-        ),
-        child: SafeArea(
-          child: Stack(
-            children: [
-              // Back button
-              Positioned(
-                left: 20,
-                top: 20,
-                child: IconButton(
-                  icon: Icon(Icons.arrow_back, color: Colors.white, size: 30),
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                ),
-              ),
-
-              // Daily indicator
-              Positioned(
-                top: 20,
-                right: 20,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.calendar_today, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text(
-                        todayDateStr,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              Center(
-                child:
-                    hasPlayedToday && !gameActive
-                        ? _buildAlreadyPlayedMessage()
-                        : gameOver
-                        ? _buildGameOverMessage()
-                        : _buildGameContent(),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAlreadyPlayedMessage() {
-    return Container(
-      padding: EdgeInsets.all(30),
-      width: 320,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.emoji_events, size: 70, color: Colors.amber),
-          SizedBox(height: 20),
-          Text(
-            'Daily Challenge Complete',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 15),
-          Text(
-            'You\'ve already completed today\'s challenge with a score of $highScore.',
-            style: TextStyle(fontSize: 16),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 20),
-          Text(
-            'Come back tomorrow for a new challenge!',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 30),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.purple[400],
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-            ),
-            child: Text('Back to Menu', style: TextStyle(fontSize: 18)),
-          ),
-        ],
-      ),
-    ).animate().fadeIn().scale();
-  }
-
-  Widget _buildGameOverMessage() {
-    return Container(
-      padding: EdgeInsets.all(30),
-      width: 320,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.emoji_events, size: 70, color: Colors.amber),
-          SizedBox(height: 20),
-          Text(
-            'Daily Challenge Complete',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 15),
-          Text(
-            'Final Score: $score',
-            style: TextStyle(fontSize: 20),
-            textAlign: TextAlign.center,
-          ),
-          if (score >= highScore && score > 0)
-            Text(
-              'New High Score! 🎉',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.orange[400],
-              ),
-            ),
-          SizedBox(height: 20),
-          Text(
-            'Come back tomorrow for a new challenge!',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 30),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.purple[400],
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-            ),
-            child: Text('Back to Menu', style: TextStyle(fontSize: 18)),
-          ),
-        ],
-      ),
-    ).animate().fadeIn().scale();
-  }
-
-  Widget _buildGameContent() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (gameActive)
-          Text(
-            'Score: $score',
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-        SizedBox(height: 20),
-        if (showPattern && gameActive)
-          Column(
-            children: [
-              Text(
-                'Remember this pattern!',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ).animate().fadeIn().scale(),
-              SizedBox(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children:
-                    sequence.asMap().entries.map((entry) {
-                      return _buildColorBox(entry.value, entry.key);
-                    }).toList(),
-              ),
-            ],
-          )
-        else if (gameActive)
-          Column(
-            children: [
-              Text(
-                'Select color ${currentIndex + 1} of ${sequence.length}',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              SizedBox(height: 10),
-              Text(
-                'Sequence Length: ${sequence.length}',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.white.withOpacity(0.8),
-                ),
-              ),
-            ],
-          ).animate().fadeIn().scale()
-        else
-          Column(
-            children: [
-              Text(
-                'Daily Challenge',
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              SizedBox(height: 15),
-              Text(
-                'Test your memory with a unique challenge each day',
-                style: TextStyle(fontSize: 18, color: Colors.white),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 20),
-              Container(
-                padding: EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'Today\'s High Score',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                    ),
-                    Text(
-                      '$highScore',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 40),
-              ElevatedButton(
-                onPressed: _startGame,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green[400],
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                ),
-                child: Text('Start Challenge', style: TextStyle(fontSize: 20)),
-              ),
-            ],
-          ).animate().fadeIn().scale(),
-        SizedBox(height: 40),
-        if (gameActive && !showPattern)
-          Center(
-            child: Container(
-              constraints: BoxConstraints(maxWidth: 400),
-              child: Wrap(
-                spacing: 20,
-                runSpacing: 20,
-                alignment: WrapAlignment.center,
-                children:
-                    colors.map((color) => _buildColorButton(color)).toList(),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildColorBox(Color color, int index) {
-    return Container(
-      width: 50,
-      height: 50,
-      margin: EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(color: Colors.black26, offset: Offset(2, 2), blurRadius: 4),
-        ],
-      ),
-    ).animate().fadeIn(delay: (index * 200).ms).scale(delay: (index * 200).ms);
-  }
-
-  Widget _buildColorButton(Color color) {
-    // Find the index of the color to play the corresponding sound
-    int colorIndex = colors.indexOf(color);
-
-    return GestureDetector(
-      onTap:
-          showPattern
-              ? null
-              : () {
-                _soundManager.playColorSound(colorIndex);
-                _checkSelection(color);
-              },
-      child: AnimatedContainer(
-        duration: Duration(milliseconds: 200),
-        width: 70,
-        height: 70,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(width: 3, color: Colors.white.withOpacity(0.8)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              offset: Offset(3, 3),
-              blurRadius: 6,
-            ),
-          ],
-        ),
-      ),
-    ).animate().fadeIn().scale();
-  }
-}
+// Rest of the game screens would be updated similarly...
+// Practice Mode and Daily Challenge would follow the same responsive patterns

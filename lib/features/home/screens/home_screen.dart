@@ -15,6 +15,9 @@ import '../../practice/screens/practice_screen.dart';
 import '../../daily_challenge/screens/daily_challenge_screen.dart';
 import '../../settings/screens/settings_screen.dart';
 import '../../achievements/screens/achievements_screen.dart';
+import '../../lumina/screens/lumina_screen.dart';
+import '../../nback/screens/nback_screen.dart';
+import '../../stream/screens/stream_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -123,11 +126,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildModeCards() {
     return Column(
       children: [
-        // Challenge Mode
+        // Classic Echo (formerly Challenge Mode)
         GameModeCard(
-          title: 'Challenge Mode',
-          description: 'Test your skills with timed challenges',
-          icon: LucideIcons.trophy,
+          title: 'Classic Echo',
+          description: 'The original sequence memory challenge',
+          icon: LucideIcons.waves, // distinctive icon for Classic
           gradient: const LinearGradient(
             colors: [Color(0xFFFF6B6B), Color(0xFFFF8E8E)],
           ),
@@ -135,17 +138,55 @@ class _HomeScreenState extends State<HomeScreen> {
           delay: 0,
         ),
         const SizedBox(height: 16),
+        // Lumina Matrix (New)
+        GameModeCard(
+          title: 'Lumina Matrix',
+          description: 'Spatial memory training on a grid',
+          icon: LucideIcons.layoutGrid,
+          gradient: const LinearGradient(
+            colors: [Color(0xFF6C5CE7), Color(0xFFA29BFE)],
+          ),
+          onTap: () => _navigateTo(const LuminaScreen()),
+          delay: 50,
+          badge: 'NEW',
+        ),
+        const SizedBox(height: 16),
+        // Reflex Match (formerly Dual Core)
+        GameModeCard(
+          title: 'Reflex Match',
+          description: 'Same or Different? Test your reaction!',
+          icon: LucideIcons.zap,
+          gradient: const LinearGradient(
+            colors: [Color(0xFF8E44AD), Color(0xFFBB6BD9)],
+          ),
+          onTap: () => _navigateTo(const NBackScreen()),
+          delay: 100,
+          badge: 'NEW',
+        ),
+        const SizedBox(height: 16),
+        // Echo Stream
+        GameModeCard(
+          title: 'Echo Stream',
+          description: 'Speed memory with flowing items',
+          icon: LucideIcons.waves,
+          gradient: const LinearGradient(
+            colors: [Color(0xFF00B894), Color(0xFF55EFC4)],
+          ),
+          onTap: () => _navigateTo(const StreamScreen()),
+          delay: 150,
+          badge: 'NEW',
+        ),
+        const SizedBox(height: 16),
         // Quantum Flux Mode
         GameModeCard(
           title: 'Quantum Flux',
-          description: 'Orbs shuffle positions! Watch the colors, not the spots.',
+          description: 'Orbs shuffle positions! Watch the colors.',
           icon: LucideIcons.shuffle,
           gradient: const LinearGradient(
             colors: [Color(0xFF2E3192), Color(0xFF1BFFFF)],
           ),
           onTap: () => _navigateToQuantumMode(),
-          delay: 50,
-          badge: 'NEW',
+          delay: 200,
         ),
         const SizedBox(height: 16),
         // Practice Mode

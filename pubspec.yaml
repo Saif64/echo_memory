@@ -39,6 +39,8 @@ dependencies:
   audioplayers:
   flutter_animate:
   shared_preferences:
+  font_awesome_flutter:
+  lucide_icons: ^0.257.0
 
 
 dev_dependencies:

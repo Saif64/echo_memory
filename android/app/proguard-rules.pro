@@ -18,3 +18,8 @@
 
 # Shared Preferences
 -keep class androidx.datastore.** { *; }
+
+# Google Play Core (Fix for R8 missing class errors)
+-dontwarn com.google.android.play.core.**
+-keep class com.google.android.play.core.** { *; }
+-dontwarn io.flutter.embedding.engine.deferredcomponents.**

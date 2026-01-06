@@ -9,7 +9,7 @@ plugins {
 }
 
 // Load key.properties file if it exists
-val keystorePropertiesFile = rootProject.file("key.properties")
+val keystorePropertiesFile = file("key.properties")
 val keystoreProperties = Properties()
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))

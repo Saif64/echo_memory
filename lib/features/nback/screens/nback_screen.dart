@@ -6,6 +6,9 @@ import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../shared/widgets/animated_gradient.dart';
 import '../../../shared/widgets/glass_container.dart';
+import '../../../shared/widgets/tutorial_overlay.dart';
+import '../../../shared/widgets/animated_demo.dart';
+import '../../../core/services/tutorial_service.dart';
 import '../../game/widgets/score_display.dart';
 import '../controllers/nback_controller.dart';
 
@@ -18,6 +21,8 @@ class NBackScreen extends StatefulWidget {
 
 class _NBackScreenState extends State<NBackScreen> {
   late ReflexController _controller;
+  bool _showTutorial = false;
+  bool _tutorialChecked = false;
   
   static const List<Color> cardColors = [
     AppColors.orbRed,
@@ -41,6 +46,113 @@ class _NBackScreenState extends State<NBackScreen> {
     super.initState();
     _controller = ReflexController();
     _controller.startGame();
+    _checkTutorial();
+  }
+  
+  Future<void> _checkTutorial() async {
+    final tutorialService = await TutorialService.getInstance();
+    if (!tutorialService.hasSeenTutorial(GameModes.reflexMatch)) {
+      if (mounted) {
+        setState(() => _showTutorial = true);
+      }
+    }
+    _tutorialChecked = true;
+  }
+  
+  void _completeTutorial() async {
+    final tutorialService = await TutorialService.getInstance();
+    await tutorialService.markTutorialComplete(GameModes.reflexMatch);
+    if (mounted) {
+      setState(() => _showTutorial = false);
+      _controller.showNextCard();
+    }
+  }
+  
+  void _skipTutorial() async {
+    final tutorialService = await TutorialService.getInstance();
+    await tutorialService.markTutorialComplete(GameModes.reflexMatch);
+    if (mounted) {
+      setState(() => _showTutorial = false);
+      _controller.showNextCard();
+    }
+  }
+  
+  List<TutorialStep> get _tutorialSteps => [
+    TutorialStep(
+      title: 'Watch the Card',
+      description: 'A card with a color and shape appears. Take a moment to memorize it.',
+      icon: LucideIcons.eye,
+      demo: _buildTutorialCard(AppColors.orbBlue, LucideIcons.star),
+    ),
+    TutorialStep(
+      title: 'Compare Cards',
+      description: 'When the next card appears, compare it to the previous one.',
+      icon: LucideIcons.gitCompare,
+      demo: const CardComparisonDemo(),
+    ),
+    TutorialStep(
+      title: 'Make Your Choice',
+      description: 'Tap SAME if the cards match exactly, or DIFFERENT if not. Build your streak!',
+      icon: LucideIcons.zap,
+      demo: _buildButtonsDemo(),
+    ),
+  ];
+  
+  Widget _buildTutorialCard(Color color, IconData icon) {
+    return Container(
+      width: 100,
+      height: 130,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color, width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.5),
+            blurRadius: 25,
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: Icon(icon, color: color, size: 50),
+    ).animate(onPlay: (c) => c.repeat(reverse: true))
+        .scale(begin: const Offset(1, 1), end: const Offset(1.05, 1.05), duration: 1500.ms);
+  }
+  
+  Widget _buildButtonsDemo() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildDemoButton('SAME', AppColors.orbGreen, LucideIcons.equal, true),
+        const SizedBox(width: 20),
+        _buildDemoButton('DIFF', AppColors.orbRed, LucideIcons.x, false),
+      ],
+    );
+  }
+  
+  Widget _buildDemoButton(String label, Color color, IconData icon, bool pulse) {
+    Widget button = Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.5), width: 2),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 28),
+          const SizedBox(height: 6),
+          Text(label, style: AppTextStyles.labelMedium.copyWith(color: color)),
+        ],
+      ),
+    );
+    
+    if (pulse) {
+      return button.animate(onPlay: (c) => c.repeat(reverse: true))
+          .scale(begin: const Offset(1, 1), end: const Offset(1.1, 1.1), duration: 800.ms);
+    }
+    return button;
   }
 
   @override
@@ -54,16 +166,30 @@ class _NBackScreenState extends State<NBackScreen> {
     return Scaffold(
       body: GameGradientBackground(
         child: SafeArea(
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, _) {
-              return Column(
-                children: [
-                  _buildHeader(),
-                  Expanded(child: _buildContent()),
-                ],
-              );
-            },
+          child: Stack(
+            children: [
+              // Main game content
+              AnimatedBuilder(
+                animation: _controller,
+                builder: (context, _) {
+                  return Column(
+                    children: [
+                      _buildHeader(),
+                      Expanded(child: _buildContent()),
+                    ],
+                  );
+                },
+              ),
+              // Tutorial overlay
+              if (_showTutorial)
+                TutorialOverlay(
+                  gameTitle: 'REFLEX MATCH',
+                  accentColor: AppColors.orbPurple,
+                  steps: _tutorialSteps,
+                  onComplete: _completeTutorial,
+                  onSkip: _skipTutorial,
+                ),
+            ],
           ),
         ),
       ),

@@ -6,6 +6,9 @@ import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../shared/widgets/animated_gradient.dart';
 import '../../../shared/widgets/glass_container.dart';
+import '../../../shared/widgets/tutorial_overlay.dart';
+import '../../../shared/widgets/animated_demo.dart';
+import '../../../core/services/tutorial_service.dart';
 import '../../game/widgets/score_display.dart';
 import '../controllers/stream_controller.dart' as game;
 import '../widgets/stream_item_widget.dart';
@@ -22,12 +25,124 @@ class _StreamScreenState extends State<StreamScreen> {
   Timer? _flowTimer;
   int _visibleItems = 0;
   bool _showingFlow = true;
+  bool _showTutorial = false;
 
   @override
   void initState() {
     super.initState();
     _controller = game.StreamController();
-    // Don't auto start, wait for difficulty selection
+    _checkTutorial();
+  }
+  
+  Future<void> _checkTutorial() async {
+    final tutorialService = await TutorialService.getInstance();
+    if (!tutorialService.hasSeenTutorial(GameModes.echoStream)) {
+      if (mounted) {
+        setState(() => _showTutorial = true);
+      }
+    }
+  }
+  
+  void _completeTutorial() async {
+    final tutorialService = await TutorialService.getInstance();
+    await tutorialService.markTutorialComplete(GameModes.echoStream);
+    if (mounted) {
+      setState(() => _showTutorial = false);
+    }
+  }
+  
+  void _skipTutorial() async {
+    final tutorialService = await TutorialService.getInstance();
+    await tutorialService.markTutorialComplete(GameModes.echoStream);
+    if (mounted) {
+      setState(() => _showTutorial = false);
+    }
+  }
+  
+  List<TutorialStep> get _tutorialSteps => [
+    TutorialStep(
+      title: 'Watch Items Flow',
+      description: 'A stream of colored shapes will flow past. Pay close attention!',
+      icon: LucideIcons.eye,
+      demo: const FlowingItemsDemo(),
+    ),
+    TutorialStep(
+      title: 'One Goes Missing',
+      description: 'After the stream ends, one item will be hidden. Can you remember it?',
+      icon: LucideIcons.helpCircle,
+      demo: _buildMissingItemDemo(),
+    ),
+    TutorialStep(
+      title: 'Pick the Right One',
+      description: 'Choose the correct item from the options. Pick your difficulty mode to start!',
+      icon: LucideIcons.checkCircle,
+      demo: _buildChoicesDemo(),
+    ),
+  ];
+  
+  Widget _buildMissingItemDemo() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildSmallItem(AppColors.orbRed, LucideIcons.circle),
+        _buildSmallItem(null, null, isHidden: true),
+        _buildSmallItem(AppColors.orbGreen, LucideIcons.triangle),
+        _buildSmallItem(AppColors.orbYellow, LucideIcons.star),
+      ],
+    );
+  }
+  
+  Widget _buildSmallItem(Color? color, IconData? icon, {bool isHidden = false}) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      width: 45,
+      height: 45,
+      decoration: BoxDecoration(
+        color: isHidden ? Colors.white.withOpacity(0.1) : color?.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isHidden ? Colors.white24 : (color ?? Colors.white24),
+          width: 2,
+        ),
+      ),
+      child: isHidden
+          ? const Icon(LucideIcons.helpCircle, color: Colors.white38, size: 20)
+          : Icon(icon, color: color, size: 20),
+    );
+  }
+  
+  Widget _buildChoicesDemo() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildChoiceItem(AppColors.orbBlue, LucideIcons.square, isCorrect: true),
+            _buildChoiceItem(AppColors.orbRed, LucideIcons.circle, isCorrect: false),
+            _buildChoiceItem(AppColors.orbPurple, LucideIcons.triangle, isCorrect: false),
+          ],
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildChoiceItem(Color color, IconData icon, {required bool isCorrect}) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isCorrect ? AppColors.orbGreen.withOpacity(0.2) : color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isCorrect ? AppColors.orbGreen : Colors.white24,
+          width: isCorrect ? 2 : 1,
+        ),
+      ),
+      child: Icon(icon, color: color, size: 28),
+    ).animate(delay: isCorrect ? 500.ms : Duration.zero)
+        .then(delay: 300.ms)
+        .shake(hz: 2, offset: const Offset(2, 0), duration: 400.ms);
   }
 
   void _startFlow() {
@@ -72,20 +187,34 @@ class _StreamScreenState extends State<StreamScreen> {
     return Scaffold(
       body: GameGradientBackground(
         child: SafeArea(
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, _) {
-              if (_controller.isGameOver) {
-                return _buildGameOver();
-              }
-              return Column(
-                children: [
-                  _buildHeader(),
-                  const SizedBox(height: 20),
-                  Expanded(child: _buildContent()),
-                ],
-              );
-            },
+          child: Stack(
+            children: [
+              // Main game content
+              AnimatedBuilder(
+                animation: _controller,
+                builder: (context, _) {
+                  if (_controller.isGameOver) {
+                    return _buildGameOver();
+                  }
+                  return Column(
+                    children: [
+                      _buildHeader(),
+                      const SizedBox(height: 20),
+                      Expanded(child: _buildContent()),
+                    ],
+                  );
+                },
+              ),
+              // Tutorial overlay
+              if (_showTutorial)
+                TutorialOverlay(
+                  gameTitle: 'ECHO STREAM',
+                  accentColor: AppColors.orbGreen,
+                  steps: _tutorialSteps,
+                  onComplete: _completeTutorial,
+                  onSkip: _skipTutorial,
+                ),
+            ],
           ),
         ),
       ),

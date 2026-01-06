@@ -10,10 +10,13 @@ import '../../../config/theme/app_text_styles.dart';
 import '../../../config/constants/game_constants.dart';
 import '../../../core/services/sound_service.dart';
 import '../../../core/services/haptic_service.dart';
+import '../../../core/services/tutorial_service.dart';
 import '../../../core/utils/responsive_utils.dart';
 import '../../../shared/widgets/animated_gradient.dart';
 import '../../../shared/widgets/glass_container.dart';
 import '../../../shared/widgets/neon_button.dart';
+import '../../../shared/widgets/tutorial_overlay.dart';
+import '../../../shared/widgets/animated_demo.dart';
 import '../../../data/models/power_up.dart';
 import '../widgets/color_orb.dart';
 import '../widgets/combo_indicator.dart';
@@ -75,6 +78,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   // Animation controllers
   late AnimationController _shakeController;
   bool _shouldShake = false;
+  
+  // Tutorial state
+  bool _showTutorial = false;
 
   @override
   void initState() {
@@ -84,7 +90,179 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _startGame();
+    _checkTutorial();
+  }
+  
+  Future<void> _checkTutorial() async {
+    // Determine which tutorial to check based on mode
+    String gameMode = GameModes.classicEcho;
+    if (widget.difficulty == 'quantum') {
+      gameMode = GameModes.quantumFlux;
+    } else if (widget.difficulty == 'zen') {
+      gameMode = GameModes.zen;
+    }
+    
+    final tutorialService = await TutorialService.getInstance();
+    if (!tutorialService.hasSeenTutorial(gameMode)) {
+      if (mounted) {
+        setState(() => _showTutorial = true);
+      }
+    } else {
+      _startGame();
+    }
+  }
+  
+  void _completeTutorial() async {
+    String gameMode = GameModes.classicEcho;
+    if (widget.difficulty == 'quantum') {
+      gameMode = GameModes.quantumFlux;
+    } else if (widget.difficulty == 'zen') {
+      gameMode = GameModes.zen;
+    }
+    
+    final tutorialService = await TutorialService.getInstance();
+    await tutorialService.markTutorialComplete(gameMode);
+    if (mounted) {
+      setState(() => _showTutorial = false);
+      _startGame();
+    }
+  }
+  
+  void _skipTutorial() async {
+    String gameMode = GameModes.classicEcho;
+    if (widget.difficulty == 'quantum') {
+      gameMode = GameModes.quantumFlux;
+    } else if (widget.difficulty == 'zen') {
+      gameMode = GameModes.zen;
+    }
+    
+    final tutorialService = await TutorialService.getInstance();
+    await tutorialService.markTutorialComplete(gameMode);
+    if (mounted) {
+      setState(() => _showTutorial = false);
+      _startGame();
+    }
+  }
+  
+  List<TutorialStep> get _tutorialSteps {
+    // Different tutorials for different modes
+    if (_isQuantumMode) {
+      return [
+        TutorialStep(
+          title: 'Watch the Sequence',
+          description: 'Colored orbs will light up one by one. Watch carefully!',
+          icon: LucideIcons.eye,
+          demo: const OrbSequenceDemo(),
+        ),
+        TutorialStep(
+          title: 'Orbs Shuffle!',
+          description: 'In Quantum mode, orbs change position after the pattern. Focus on COLORS, not positions!',
+          icon: LucideIcons.shuffle,
+          demo: _buildShuffleDemo(),
+        ),
+        TutorialStep(
+          title: 'Tap the Colors',
+          description: 'Tap the colors in the correct order. Remember: colors matter, not positions!',
+          icon: LucideIcons.mousePointer2,
+          demo: _buildTapDemo(),
+        ),
+      ];
+    }
+    
+    return [
+      TutorialStep(
+        title: 'Watch the Sequence',
+        description: 'Colored orbs will light up one by one. Memorize the order!',
+        icon: LucideIcons.eye,
+        demo: const OrbSequenceDemo(),
+      ),
+      TutorialStep(
+        title: 'Remember the Pattern',
+        description: 'Pay attention to the colors and their sequence. It gets longer each round!',
+        icon: LucideIcons.brain,
+        demo: _buildPatternDemo(),
+      ),
+      TutorialStep(
+        title: 'Tap in Order',
+        description: 'Tap the orbs in the same order they lit up. Build combos for bonus points!',
+        icon: LucideIcons.mousePointer2,
+        demo: _buildTapDemo(),
+      ),
+    ];
+  }
+  
+  Widget _buildShuffleDemo() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildSmallOrb(AppColors.orbBlue, 0),
+        const Icon(LucideIcons.arrowLeftRight, color: Colors.white54, size: 24),
+        _buildSmallOrb(AppColors.orbGreen, 1),
+        const Icon(LucideIcons.arrowLeftRight, color: Colors.white54, size: 24),
+        _buildSmallOrb(AppColors.orbRed, 2),
+      ],
+    ).animate(onPlay: (c) => c.repeat())
+        .shimmer(duration: 1500.ms, color: Colors.white24);
+  }
+  
+  Widget _buildPatternDemo() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildSmallOrb(AppColors.orbBlue, 0),
+        const SizedBox(width: 8),
+        const Icon(LucideIcons.arrowRight, color: Colors.white38, size: 16),
+        const SizedBox(width: 8),
+        _buildSmallOrb(AppColors.orbRed, 1),
+        const SizedBox(width: 8),
+        const Icon(LucideIcons.arrowRight, color: Colors.white38, size: 16),
+        const SizedBox(width: 8),
+        _buildSmallOrb(AppColors.orbGreen, 2),
+      ],
+    );
+  }
+  
+  Widget _buildTapDemo() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(3, (index) {
+        final colors = [AppColors.orbBlue, AppColors.orbRed, AppColors.orbGreen];
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: colors[index].withOpacity(0.3),
+            border: Border.all(color: colors[index], width: 2),
+          ),
+          child: index == 0 
+              ? const Icon(LucideIcons.mousePointer2, color: Colors.white70, size: 20)
+              : null,
+        ).animate(delay: (index * 300).ms)
+            .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1));
+      }),
+    );
+  }
+  
+  Widget _buildSmallOrb(Color color, int index) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color.withOpacity(0.4),
+        border: Border.all(color: color, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+    ).animate(delay: (index * 200).ms)
+        .fadeIn()
+        .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1));
   }
 
   @override
@@ -354,6 +532,17 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     ResponsiveUtils.init(context);
+    
+    // Determine accent color based on mode
+    Color accentColor = AppColors.orbBlue;
+    String gameTitle = 'CLASSIC ECHO';
+    if (_isQuantumMode) {
+      accentColor = AppColors.orbPurple;
+      gameTitle = 'QUANTUM FLUX';
+    } else if (widget.difficulty == 'zen') {
+      accentColor = AppColors.orbGreen;
+      gameTitle = 'ZEN MODE';
+    }
 
     return Scaffold(
       body: ScreenShake(
@@ -395,6 +584,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     child: Center(
                       child: ComboIndicator(streak: _currentStreak),
                     ),
+                  ),
+                  
+                // Tutorial overlay
+                if (_showTutorial)
+                  TutorialOverlay(
+                    gameTitle: gameTitle,
+                    accentColor: accentColor,
+                    steps: _tutorialSteps,
+                    onComplete: _completeTutorial,
+                    onSkip: _skipTutorial,
                   ),
               ],
             ),

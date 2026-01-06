@@ -7,6 +7,9 @@ import '../../../config/theme/app_text_styles.dart';
 import '../../../shared/widgets/animated_gradient.dart';
 import '../../../shared/widgets/glass_container.dart';
 import '../../../shared/widgets/neon_button.dart';
+import '../../../shared/widgets/tutorial_overlay.dart';
+import '../../../shared/widgets/animated_demo.dart';
+import '../../../core/services/tutorial_service.dart';
 import '../../game/widgets/score_display.dart';
 import '../controllers/lumina_controller.dart';
 import '../widgets/matrix_grid.dart';
@@ -22,12 +25,108 @@ class _LuminaScreenState extends State<LuminaScreen> {
   late LuminaGameController _controller;
   Timer? _phaseTimer;
   String _statusText = 'WATCH';
+  bool _showTutorial = false;
+  bool _gameStarted = false;
 
   @override
   void initState() {
     super.initState();
     _controller = LuminaGameController();
-    _startLevelSequence();
+    _checkTutorial();
+  }
+  
+  Future<void> _checkTutorial() async {
+    final tutorialService = await TutorialService.getInstance();
+    if (!tutorialService.hasSeenTutorial(GameModes.luminaMatrix)) {
+      if (mounted) {
+        setState(() => _showTutorial = true);
+      }
+    } else {
+      _startLevelSequence();
+    }
+  }
+  
+  void _completeTutorial() async {
+    final tutorialService = await TutorialService.getInstance();
+    await tutorialService.markTutorialComplete(GameModes.luminaMatrix);
+    if (mounted) {
+      setState(() => _showTutorial = false);
+      _startLevelSequence();
+    }
+  }
+  
+  void _skipTutorial() async {
+    final tutorialService = await TutorialService.getInstance();
+    await tutorialService.markTutorialComplete(GameModes.luminaMatrix);
+    if (mounted) {
+      setState(() => _showTutorial = false);
+      _startLevelSequence();
+    }
+  }
+  
+  List<TutorialStep> get _tutorialSteps => [
+    TutorialStep(
+      title: 'Watch the Pattern',
+      description: 'Tiles will light up briefly. Focus and memorize their positions!',
+      icon: LucideIcons.eye,
+      demo: const GridPatternDemo(gridSize: 3, activeColor: AppColors.orbPurple),
+    ),
+    TutorialStep(
+      title: 'Remember Positions',
+      description: 'The pattern will disappear. Keep the tile positions in your memory.',
+      icon: LucideIcons.brain,
+      demo: _buildMemoryDemo(),
+    ),
+    TutorialStep(
+      title: 'Tap to Recall',
+      description: 'Tap the tiles that were lit up. Get them all right to advance!',
+      icon: LucideIcons.mousePointer2,
+      demo: _buildTapDemo(),
+    ),
+  ];
+  
+  Widget _buildMemoryDemo() {
+    return Container(
+      width: 120,
+      height: 120,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: const Icon(LucideIcons.brain, color: AppColors.orbPurple, size: 50),
+    ).animate(onPlay: (c) => c.repeat(reverse: true))
+        .scale(begin: const Offset(0.95, 0.95), end: const Offset(1.05, 1.05), duration: 1200.ms);
+  }
+  
+  Widget _buildTapDemo() {
+    return SizedBox(
+      width: 150,
+      height: 150,
+      child: GridView.count(
+        crossAxisCount: 3,
+        mainAxisSpacing: 6,
+        crossAxisSpacing: 6,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        children: List.generate(9, (index) {
+          final isTarget = [0, 4, 8].contains(index);
+          return Container(
+            decoration: BoxDecoration(
+              color: isTarget 
+                  ? AppColors.orbPurple.withOpacity(0.5) 
+                  : Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: isTarget ? AppColors.orbPurple : Colors.white24,
+              ),
+            ),
+          ).animate(delay: (index * 80).ms)
+              .fadeIn()
+              .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1));
+        }),
+      ),
+    );
   }
 
   void _startLevelSequence() {
@@ -125,27 +224,41 @@ class _LuminaScreenState extends State<LuminaScreen> {
     return Scaffold(
       body: GameGradientBackground(
         child: SafeArea(
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              return Column(
-                children: [
-                  _buildHeader(),
-                  Expanded(
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _buildGrid(),
-                          const SizedBox(height: 32),
-                          _buildStatus(),
-                        ],
+          child: Stack(
+            children: [
+              // Main game content
+              AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return Column(
+                    children: [
+                      _buildHeader(),
+                      Expanded(
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildGrid(),
+                              const SizedBox(height: 32),
+                              _buildStatus(),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              );
-            },
+                    ],
+                  );
+                },
+              ),
+              // Tutorial overlay
+              if (_showTutorial)
+                TutorialOverlay(
+                  gameTitle: 'LUMINA MATRIX',
+                  accentColor: AppColors.orbPurple,
+                  steps: _tutorialSteps,
+                  onComplete: _completeTutorial,
+                  onSkip: _skipTutorial,
+                ),
+            ],
           ),
         ),
       ),

@@ -1,8 +1,11 @@
 /// Settings screen for Echo Memory
 /// Game configuration and preferences
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../config/theme/app_text_styles.dart';
 import '../../../core/services/sound_service.dart';
@@ -24,12 +27,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _soundEnabled = true;
   bool _hapticEnabled = true;
   String _selectedTheme = 'aurora';
+  String _appVersion = '';
 
   @override
   void initState() {
     super.initState();
     _soundEnabled = _soundService.isEnabled;
     _hapticEnabled = _hapticService.isEnabled;
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() => _appVersion = packageInfo.version);
+    }
+  }
+
+  Future<void> _launchPrivacyPolicy() async {
+    final uri = Uri.parse('https://echo-memory-one.vercel.app/privacy-policy.html');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _launchRateApp() async {
+    final String url;
+    if (Platform.isAndroid) {
+      url = 'https://play.google.com/store/apps/details?id=com.pixel.peak.second';
+    } else if (Platform.isIOS) {
+      // Update with your actual App Store ID when available
+      url = 'https://apps.apple.com/app/echo-memory/id6740020285';
+    } else {
+      return;
+    }
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   @override
@@ -79,22 +114,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _buildSection('About', [
                           _buildInfoTile(
                             title: 'Version',
-                            value: '2.0.0',
+                            value: _appVersion.isEmpty ? '...' : _appVersion,
                             icon: LucideIcons.info,
                           ),
                           _buildActionTile(
                             title: 'Privacy Policy',
                             icon: LucideIcons.shieldCheck,
-                            onTap: () {
-                              // Navigate to privacy policy
-                            },
+                            onTap: _launchPrivacyPolicy,
                           ),
                           _buildActionTile(
                             title: 'Rate App',
                             icon: LucideIcons.star,
-                            onTap: () {
-                              // Open app store
-                            },
+                            onTap: _launchRateApp,
                           ),
                         ]),
                       ],

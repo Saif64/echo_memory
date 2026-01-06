@@ -33,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       body: ParticleBackground(
-        particleCount: 40,
+        particleCount: 25, // Reduced from 40 for better performance
         particleColor: AppColors.orbBlue.withOpacity(0.3),
         child: AnimatedGradientBackground(
           colors: [

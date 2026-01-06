@@ -130,7 +130,7 @@ class _GridOverlayPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-/// Floating particles background
+/// Floating particles background - Optimized
 class ParticleBackground extends StatefulWidget {
   final Widget child;
   final int particleCount;
@@ -139,7 +139,7 @@ class ParticleBackground extends StatefulWidget {
   const ParticleBackground({
     super.key,
     required this.child,
-    this.particleCount = 30,
+    this.particleCount = 20, // Reduced from 30 for better performance
     this.particleColor = Colors.white,
   });
 
@@ -187,7 +187,7 @@ class _ParticleBackgroundState extends State<ParticleBackground>
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        widget.child,
+        RepaintBoundary(child: widget.child),
         IgnorePointer(
           child: AnimatedBuilder(
             animation: _controller,
@@ -228,6 +228,9 @@ class _ParticlePainter extends CustomPainter {
   final List<_Particle> particles;
   final Color color;
   final double progress;
+  
+  // Cache paint objects to avoid allocation during paint
+  static final Map<double, Paint> _paintCache = {};
 
   _ParticlePainter({
     required this.particles,
@@ -239,9 +242,14 @@ class _ParticlePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     for (final particle in particles) {
       final y = (particle.y + progress * particle.speed) % 1.0;
-      final paint = Paint()
-        ..color = color.withOpacity(particle.opacity)
-        ..style = PaintingStyle.fill;
+      
+      // Use cached paint or create new one
+      final paint = _paintCache.putIfAbsent(
+        particle.opacity,
+        () => Paint()
+          ..color = color.withOpacity(particle.opacity)
+          ..style = PaintingStyle.fill,
+      );
 
       canvas.drawCircle(
         Offset(particle.x * size.width, y * size.height),

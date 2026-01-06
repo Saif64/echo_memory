@@ -1,5 +1,5 @@
 /// Glassmorphism container widget for Echo Memory
-/// Creates beautiful frosted glass effect containers
+/// Creates beautiful frosted glass effect containers - Optimized
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../config/theme/app_colors.dart';
@@ -26,7 +26,7 @@ class GlassContainer extends StatelessWidget {
     this.padding,
     this.margin,
     this.borderRadius = 20,
-    this.blur = 10,
+    this.blur = 8, // Reduced from 10 for better performance
     this.backgroundColor,
     this.borderColor,
     this.borderWidth = 1,
@@ -36,35 +36,37 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      margin: margin,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-          child: GestureDetector(
-            onTap: onTap,
-            child: Container(
-              padding: padding ?? const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: backgroundColor ?? AppColors.glassBackground,
-                borderRadius: BorderRadius.circular(borderRadius),
-                border: Border.all(
-                  color: borderColor ?? AppColors.glassBorder,
-                  width: borderWidth,
+    return RepaintBoundary(
+      child: Container(
+        width: width,
+        height: height,
+        margin: margin,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(borderRadius),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+            child: GestureDetector(
+              onTap: onTap,
+              child: Container(
+                padding: padding ?? const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: backgroundColor ?? AppColors.glassBackground,
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  border: Border.all(
+                    color: borderColor ?? AppColors.glassBorder,
+                    width: borderWidth,
+                  ),
+                  boxShadow: boxShadow ??
+                      [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                 ),
-                boxShadow: boxShadow ??
-                    [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
+                child: child,
               ),
-              child: child,
             ),
           ),
         ),

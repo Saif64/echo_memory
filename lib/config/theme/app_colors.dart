@@ -111,6 +111,16 @@ class AppColors {
   static const Color difficultyExpert = Color(0xFFFF9F43);
   static const Color difficultyMaster = Color(0xFFFF6B6B);
 
+  // Bento Card Colors (Vibrant, for Game Cards)
+  static const Color bentoYellow = Color(0xFFFFD166); // Warm Yellow
+  static const Color bentoOrange = Color(0xFFFF9F1C); // Bright Orange
+  static const Color bentoGreen = Color(0xFF06D6A0); // Mint Green
+  static const Color bentoBlue = Color(0xFF118AB2); // Steel Blue
+  static const Color bentoRed = Color(0xFFEF476F); // Hot Red/Pink
+  static const Color bentoPurple = Color(0xFF9D4EDD); // Deep Purple
+  static const Color bentoCyan = Color(0xFF00B4D8); // Bright Cyan
+  static const Color bentoPink = Color(0xFFFF70A6); // Rose Pink
+
   // Get gradient for orb (radial glow effect)
   static RadialGradient getOrbGradient(int index) {
     final color = gameOrbs[index % gameOrbs.length];

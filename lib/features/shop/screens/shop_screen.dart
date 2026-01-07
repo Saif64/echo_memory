@@ -10,8 +10,9 @@ import '../../../config/theme/app_colors.dart';
 import '../../../shared/widgets/animated_gradient.dart';
 import '../../../shared/widgets/glass_container.dart';
 import '../../../shared/widgets/neon_button.dart';
-import '../../../shared/dialogs/auth_required_dialog.dart';
 import '../../../data/dto/shop_dto.dart';
+import '../../auth/cubit/auth_cubit.dart';
+import '../../auth/cubit/auth_state.dart';
 import '../../economy/cubit/economy_cubit.dart';
 import '../../economy/cubit/economy_state.dart';
 import '../cubit/shop_cubit.dart';
@@ -27,6 +28,7 @@ class ShopScreen extends StatefulWidget {
 class _ShopScreenState extends State<ShopScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _hasLoadedItems = false;
 
   final List<Map<String, dynamic>> _categories = [
     {'type': ShopItemType.lives, 'name': 'Lives', 'icon': LucideIcons.heart},
@@ -39,11 +41,7 @@ class _ShopScreenState extends State<ShopScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: _categories.length, vsync: this);
-    
-    // Load shop items
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ShopCubit>().loadItems();
-    });
+    // Don't load items here - we'll load them only for authenticated non-guest users
   }
 
   @override
@@ -52,8 +50,122 @@ class _ShopScreenState extends State<ShopScreen>
     super.dispose();
   }
 
+  void _loadItemsIfNeeded(AuthState authState) {
+    // Only load items if user is authenticated and not a guest
+    if (!_hasLoadedItems && authState.isAuthenticated && !authState.isGuest) {
+      _hasLoadedItems = true;
+      context.read<ShopCubit>().loadItems();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, authState) {
+        // For guest users, show the link account view
+        if (authState.isGuest) {
+          return _buildGuestView();
+        }
+
+        // For authenticated non-guest users, load items and show shop
+        _loadItemsIfNeeded(authState);
+        return _buildShopView();
+      },
+    );
+  }
+
+  Widget _buildGuestView() {
+    return Scaffold(
+      body: Stack(
+        children: [
+          // Background
+          const AnimatedGradientBackground(child: SizedBox.expand()),
+
+          // Content
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  // Header
+                  Row(
+                    children: [
+                      Text(
+                        'Shop',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ],
+                  ).animate().fadeIn().slideY(begin: -0.2),
+
+                  const Spacer(),
+
+                  // Guest message with link account option
+                  GlassContainer(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.orbPurple.withOpacity(0.3),
+                                AppColors.orbBlue.withOpacity(0.2),
+                              ],
+                            ),
+                          ),
+                          child: Icon(
+                            LucideIcons.shoppingBag,
+                            size: 40,
+                            color: AppColors.orbPurple,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Link Your Account',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Sign in with Google to access the shop, save your progress, and sync across devices.',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 32),
+                        NeonButton(
+                          text: 'Sign in with Google',
+                          icon: LucideIcons.chrome,
+                          color: AppColors.orbBlue,
+                          onPressed: () => context.read<AuthCubit>().linkToGoogle(),
+                        ),
+                      ],
+                    ),
+                  ).animate().fadeIn(delay: 200.ms).scale(begin: const Offset(0.9, 0.9)),
+
+                  const Spacer(),
+                  
+                  // Bottom padding for nav bar
+                  const SizedBox(height: 100),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShopView() {
     return Scaffold(
       body: Stack(
         children: [
@@ -172,22 +284,13 @@ class _ShopScreenState extends State<ShopScreen>
           context.read<EconomyCubit>().fetchState();
         }
         if (state.errorMessage != null) {
-          // Check if it's an auth error (401/unauthorized)
-          if (_isAuthError(state.errorMessage!)) {
-            AuthRequiredDialog.show(
-              context,
-              title: 'Login Required',
-              message: 'Please login or create an account to access the shop.',
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage!),
-                backgroundColor: AppColors.accentError,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.errorMessage!),
+              backgroundColor: AppColors.accentError,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
           context.read<ShopCubit>().clearError();
         }
       },
@@ -263,14 +366,7 @@ class _ShopScreenState extends State<ShopScreen>
     }
   }
 
-  bool _isAuthError(String error) {
-    final lowerError = error.toLowerCase();
-    return lowerError.contains('401') ||
-        lowerError.contains('unauthorized') ||
-        lowerError.contains('authentication') ||
-        lowerError.contains('unauthenticated') ||
-        lowerError.contains('login required');
-  }
+
 
   void _showPurchaseSuccessDialog(PurchaseResponseDTO result) {
     showDialog(

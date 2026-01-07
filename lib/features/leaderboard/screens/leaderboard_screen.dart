@@ -9,7 +9,9 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../config/theme/app_colors.dart';
 import '../../../shared/widgets/animated_gradient.dart';
 import '../../../shared/widgets/glass_container.dart';
-import '../../../shared/dialogs/auth_required_dialog.dart';
+import '../../../shared/widgets/neon_button.dart';
+import '../../auth/cubit/auth_cubit.dart';
+import '../../auth/cubit/auth_state.dart';
 import '../cubit/leaderboard_cubit.dart';
 import '../cubit/leaderboard_state.dart';
 import '../../../data/dto/leaderboard_dto.dart';
@@ -25,6 +27,7 @@ class LeaderboardScreen extends StatefulWidget {
 class _LeaderboardScreenState extends State<LeaderboardScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _hasLoadedData = false;
 
   final List<Map<String, dynamic>> _gameModes = [
     {'id': 'classic', 'name': 'Classic', 'icon': LucideIcons.brain},
@@ -38,11 +41,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_onTabChanged);
-    
-    // Load initial data
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<LeaderboardCubit>().loadLeaderboard();
-    });
+    // Don't load data here - only load for authenticated non-guest users
   }
 
   @override
@@ -61,8 +60,122 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     }
   }
 
+  void _loadDataIfNeeded(AuthState authState) {
+    // Only load data if user is authenticated and not a guest
+    if (!_hasLoadedData && authState.isAuthenticated && !authState.isGuest) {
+      _hasLoadedData = true;
+      context.read<LeaderboardCubit>().loadLeaderboard();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, authState) {
+        // For guest users, show the link account view
+        if (authState.isGuest) {
+          return _buildGuestView();
+        }
+
+        // For authenticated non-guest users, load data and show leaderboard
+        _loadDataIfNeeded(authState);
+        return _buildLeaderboardView();
+      },
+    );
+  }
+
+  Widget _buildGuestView() {
+    return Scaffold(
+      body: Stack(
+        children: [
+          // Background
+          const AnimatedGradientBackground(child: SizedBox.expand()),
+
+          // Content
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  // Header
+                  Row(
+                    children: [
+                      Text(
+                        'Leaderboard',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ],
+                  ).animate().fadeIn().slideY(begin: -0.2),
+
+                  const Spacer(),
+
+                  // Guest message with link account option
+                  GlassContainer(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.orbPurple.withOpacity(0.3),
+                                AppColors.orbBlue.withOpacity(0.2),
+                              ],
+                            ),
+                          ),
+                          child: Icon(
+                            LucideIcons.trophy,
+                            size: 40,
+                            color: AppColors.orbPurple,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Link Your Account',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Sign in with Google to see leaderboards, compete with others, and track your progress.',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 32),
+                        NeonButton(
+                          text: 'Sign in with Google',
+                          icon: LucideIcons.chrome,
+                          color: AppColors.orbBlue,
+                          onPressed: () => context.read<AuthCubit>().linkToGoogle(),
+                        ),
+                      ],
+                    ),
+                  ).animate().fadeIn(delay: 200.ms).scale(begin: const Offset(0.9, 0.9)),
+
+                  const Spacer(),
+                  
+                  // Bottom padding for nav bar
+                  const SizedBox(height: 100),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLeaderboardView() {
     return Scaffold(
       body: Stack(
         children: [
@@ -185,48 +298,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         }
 
         if (state.errorMessage != null) {
-          // Check if it's an auth error
-          final isAuthError = _isAuthError(state.errorMessage!);
-          
-          if (isAuthError) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    LucideIcons.logIn,
-                    size: 64,
-                    color: AppColors.orbPurple.withOpacity(0.5),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Login Required',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Login to see leaderboards',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => AuthRequiredDialog.show(
-                      context,
-                      title: 'Login Required',
-                      message: 'Please login to view leaderboards.',
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.orbPurple,
-                    ),
-                    child: const Text('Login'),
-                  ),
-                ],
-              ),
-            );
-          }
-          
           return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -240,6 +311,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                 Text(
                   state.errorMessage!,
                   style: TextStyle(color: AppColors.textSecondary),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
                 TextButton(
@@ -341,15 +413,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         ],
       ),
     ).animate().fadeIn(delay: 300.ms);
-  }
-
-  bool _isAuthError(String error) {
-    final lowerError = error.toLowerCase();
-    return lowerError.contains('401') ||
-        lowerError.contains('unauthorized') ||
-        lowerError.contains('authentication') ||
-        lowerError.contains('unauthenticated') ||
-        lowerError.contains('login required');
   }
 }
 

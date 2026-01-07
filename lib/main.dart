@@ -1,63 +1,11 @@
-/// Echo Memory - Main Entry Point
-/// A premium memory game with beautiful visuals
-import 'dart:async';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'app.dart';
-import 'core/services/storage_service.dart';
+/// Echo Memory - Main Entry Point (Staging)
+/// Default entry point uses staging environment
 
-void main() async {
-  // Ensure Flutter bindings are initialized
-  WidgetsFlutterBinding.ensureInitialized();
+import 'main_common.dart';
+import 'core/network/environment_config.dart';
 
-  // Set up global error handling
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-    // Log errors in debug mode, silently handle in release
-    if (kDebugMode) {
-      debugPrint('Flutter Error: ${details.exceptionAsString()}');
-      debugPrint('Stack trace:\n${details.stack}');
-    }
-  };
-
-  // Run the app with zone-guarded error handling
-  runZonedGuarded(
-    () async {
-      // Initialize storage with error handling
-      try {
-        await StorageService().init();
-      } catch (e) {
-        debugPrint('Storage initialization failed: $e');
-        // Continue anyway - storage will use defaults
-      }
-
-      // Set preferred orientations
-      await SystemChrome.setPreferredOrientations([
-        DeviceOrientation.portraitUp,
-        DeviceOrientation.portraitDown,
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight,
-      ]);
-
-      // Set system UI style
-      SystemChrome.setSystemUIOverlayStyle(
-        const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,
-          systemNavigationBarColor: Color(0xFF0D0D1A),
-          systemNavigationBarIconBrightness: Brightness.light,
-        ),
-      );
-
-      runApp(const EchoMemoryApp());
-    },
-    (error, stackTrace) {
-      // Handle uncaught async errors
-      if (kDebugMode) {
-        debugPrint('Uncaught error: $error');
-        debugPrint('Stack trace:\n$stackTrace');
-      }
-    },
-  );
+void main() {
+  // Default to staging environment
+  EnvironmentConfig.init(Environment.staging);
+  mainCommon();
 }

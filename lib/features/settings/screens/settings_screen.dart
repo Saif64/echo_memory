@@ -3,6 +3,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -12,6 +13,10 @@ import '../../../core/services/sound_service.dart';
 import '../../../core/services/haptic_service.dart';
 import '../../../shared/widgets/animated_gradient.dart';
 import '../../../shared/widgets/glass_container.dart';
+import '../../../shared/widgets/neon_button.dart';
+import '../../auth/cubit/auth_cubit.dart';
+import '../../auth/cubit/auth_state.dart';
+
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -84,6 +89,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Account Section (for guest users to link account)
+                        _buildAccountSection(),
                         _buildSection('Sound & Haptics', [
                           _buildSwitchTile(
                             title: 'Sound Effects',
@@ -128,6 +135,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             onTap: _launchRateApp,
                           ),
                         ]),
+                        // Bottom padding for floating nav bar
+                        const SizedBox(height: 100),
                       ],
                     ),
                   ),
@@ -160,6 +169,264 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ],
     ).animate().fadeIn().slideX(begin: -0.2, end: 0);
+  }
+
+  Widget _buildAccountSection() {
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, state) {
+        final user = state.user;
+        final isGuest = user?.isGuest ?? true;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 8, bottom: 12),
+              child: Text(
+                'ACCOUNT',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.textMuted,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ),
+            GlassContainer(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  // User info row
+                  Row(
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: isGuest
+                                ? [AppColors.textMuted, AppColors.textMuted.withOpacity(0.5)]
+                                : [AppColors.orbPurple, AppColors.orbBlue],
+                          ),
+                        ),
+                        child: Icon(
+                          isGuest ? LucideIcons.userCircle : LucideIcons.user,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user?.displayName ?? 'Guest',
+                              style: AppTextStyles.titleSmall,
+                            ),
+                            Text(
+                              isGuest 
+                                  ? 'Playing as guest' 
+                                  : (user?.email ?? 'Linked account'),
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: isGuest ? AppColors.orbYellow : AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (isGuest)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.orbYellow.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'GUEST',
+                            style: TextStyle(
+                              color: AppColors.orbYellow,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+
+                  // Link account options for guest users
+                  if (isGuest) ...[
+                    const SizedBox(height: 20),
+                    Divider(color: AppColors.glassBorder, height: 1),
+                    const SizedBox(height: 16),
+                    
+                    Text(
+                      'Link your account to save progress across devices',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Google Link Button
+                    _buildLinkButton(
+                      label: 'Link with Google',
+                      icon: LucideIcons.mail,
+                      color: AppColors.orbRed,
+                      onTap: () => _linkWithGoogle(context),
+                    ),
+                    
+                    const SizedBox(height: 12),
+                    
+                    // Email Link Button
+                    _buildLinkButton(
+                      label: 'Link with Email',
+                      icon: LucideIcons.atSign,
+                      color: AppColors.orbBlue,
+                      onTap: () => _showEmailLinkDialog(context),
+                    ),
+                  ],
+                  
+                  // Logout option for all users
+                  if (!isGuest) ...[
+                    const SizedBox(height: 16),
+                    Divider(color: AppColors.glassBorder, height: 1),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: () => _logout(context),
+                      child: Text(
+                        'Logout',
+                        style: TextStyle(color: AppColors.accentError),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ).animate().fadeIn(delay: 50.ms);
+      },
+    );
+  }
+
+  Widget _buildLinkButton({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color.withOpacity(0.2),
+          foregroundColor: color,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: color.withOpacity(0.3)),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 20),
+            const SizedBox(width: 12),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _linkWithGoogle(BuildContext context) {
+    context.read<AuthCubit>().linkToGoogle();
+  }
+
+  void _showEmailLinkDialog(BuildContext context) {
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Link Account'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                prefixIcon: Icon(LucideIcons.mail),
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: passwordController,
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                prefixIcon: Icon(LucideIcons.lock),
+              ),
+              obscureText: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              context.read<AuthCubit>().linkToEmail(
+                email: emailController.text.trim(),
+                password: passwordController.text,
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.orbPurple,
+            ),
+            child: const Text('Link'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _logout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Logout?'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              context.read<AuthCubit>().logout();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.accentError,
+            ),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildSection(String title, List<Widget> children) {

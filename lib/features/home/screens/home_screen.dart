@@ -13,11 +13,11 @@ import '../widgets/animated_title.dart';
 import '../../game/screens/game_screen.dart';
 import '../../practice/screens/practice_screen.dart';
 import '../../daily_challenge/screens/daily_challenge_screen.dart';
-import '../../settings/screens/settings_screen.dart';
-import '../../achievements/screens/achievements_screen.dart';
 import '../../lumina/screens/lumina_screen.dart';
 import '../../nback/screens/nback_screen.dart';
 import '../../stream/screens/stream_screen.dart';
+import '../../shop/screens/shop_screen.dart';
+import '../../economy/widgets/economy_bar.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -61,7 +61,14 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Column(
         children: [
-          const SizedBox(height: 40),
+          // Economy bar at top
+          Align(
+            alignment: Alignment.topCenter,
+            child: EconomyBar(
+              onShopTap: () => _navigateTo(const ShopScreen()),
+            ),
+          ),
+          const SizedBox(height: 24),
           // Animated title
           const AnimatedGameTitle(),
           const SizedBox(height: 16),
@@ -76,10 +83,8 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 48),
           // Game mode cards
           _buildModeCards(),
-          const SizedBox(height: 32),
-          // Bottom actions
-          _buildBottomActions(),
-          const SizedBox(height: 24),
+          // Bottom padding for floating nav bar
+          const SizedBox(height: 100),
         ],
       ),
     );
@@ -105,8 +110,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   textAlign: TextAlign.center,
                 ).animate().fadeIn(delay: 400.ms),
-                const SizedBox(height: 32),
-                _buildBottomActions(),
               ],
             ),
           ),
@@ -116,7 +119,12 @@ class _HomeScreenState extends State<HomeScreen> {
           flex: 6,
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-            child: _buildModeCards(),
+            child: Column(
+              children: [
+                _buildModeCards(),
+                const SizedBox(height: 100), // Padding for floating nav
+              ],
+            ),
           ),
         ),
       ],
@@ -226,56 +234,6 @@ class _HomeScreenState extends State<HomeScreen> {
           delay: 300,
         ),
       ],
-    );
-  }
-
-  Widget _buildBottomActions() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Achievements
-        _buildIconButton(
-          icon: LucideIcons.trophy,
-          label: 'Achievements',
-          onTap: () => _navigateTo(const AchievementsScreen()),
-        ).animate().fadeIn(delay: 600.ms).scale(delay: 600.ms),
-        const SizedBox(width: 24),
-        // Settings
-        _buildIconButton(
-          icon: LucideIcons.settings,
-          label: 'Settings',
-          onTap: () => _navigateTo(const SettingsScreen()),
-        ).animate().fadeIn(delay: 700.ms).scale(delay: 700.ms),
-      ],
-    );
-  }
-
-  Widget _buildIconButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: GlassContainer(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        borderRadius: 16,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: AppColors.textSecondary,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: AppTextStyles.labelMedium,
-            ),
-          ],
-        ),
-      ),
     );
   }
 

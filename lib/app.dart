@@ -13,7 +13,6 @@ import 'data/repositories/leaderboard_repository.dart';
 import 'data/repositories/shop_repository.dart';
 import 'features/auth/cubit/auth_cubit.dart';
 import 'features/auth/cubit/auth_state.dart';
-import 'features/auth/screens/login_screen.dart';
 import 'features/economy/cubit/economy_cubit.dart';
 import 'features/navigation/screens/main_navigation_screen.dart';
 import 'features/leaderboard/cubit/leaderboard_cubit.dart';
@@ -73,8 +72,41 @@ class EchoMemoryApp extends StatelessWidget {
               return const MainNavigationScreen();
             }
 
-            // Show login screen if not authenticated
-            return const LoginScreen();
+            // If unauthenticated (guest login failed), show retry option
+            return Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.cloud_off,
+                      size: 64,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Connection Error',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Unable to connect to server',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () {
+                        context.read<AuthCubit>().checkAuthStatus();
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            );
           },
         ),
         builder: (context, child) {

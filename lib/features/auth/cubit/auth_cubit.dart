@@ -16,6 +16,7 @@ class AuthCubit extends Cubit<AuthState> {
         super(const AuthState.initial());
 
   /// Check if user has existing session
+  /// If no session exists, automatically login as guest
   Future<void> checkAuthStatus() async {
     emit(const AuthState.loading());
     
@@ -29,14 +30,28 @@ class AuthCubit extends Cubit<AuthState> {
         if (user != null) {
           emit(AuthState.authenticated(user));
         } else {
-          // Has token but no user data cached - still authenticated
-          // We'll treat as authenticated and let the app handle it
-          emit(const AuthState.unauthenticated());
+          // Has token but no user data cached - still try to use the session
+          // Auto-login as guest if we can't restore the session
+          await _autoGuestLogin();
         }
       } else {
-        emit(const AuthState.unauthenticated());
+        // No existing session - automatically login as guest
+        await _autoGuestLogin();
       }
     } catch (e) {
+      // On any error, try to login as guest
+      await _autoGuestLogin();
+    }
+  }
+
+  /// Automatically login as guest (used for first-time users)
+  Future<void> _autoGuestLogin() async {
+    try {
+      final user = await _authRepository.guestLogin();
+      emit(AuthState.authenticated(user));
+    } catch (e) {
+      // If even guest login fails, emit unauthenticated
+      // This allows the app to still function in a degraded mode
       emit(const AuthState.unauthenticated());
     }
   }

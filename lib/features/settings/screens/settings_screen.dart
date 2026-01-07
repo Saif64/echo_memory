@@ -276,16 +276,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       color: AppColors.orbRed,
                       onTap: () => _linkWithGoogle(context),
                     ),
-                    
-                    const SizedBox(height: 12),
-                    
-                    // Email Link Button
-                    _buildLinkButton(
-                      label: 'Link with Email',
-                      icon: LucideIcons.atSign,
-                      color: AppColors.orbBlue,
-                      onTap: () => _showEmailLinkDialog(context),
-                    ),
                   ],
                   
                   // Logout option for all users
@@ -344,61 +334,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _linkWithGoogle(BuildContext context) {
     context.read<AuthCubit>().linkToGoogle();
-  }
-
-  void _showEmailLinkDialog(BuildContext context) {
-    final emailController = TextEditingController();
-    final passwordController = TextEditingController();
-    
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Link Account'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                prefixIcon: Icon(LucideIcons.mail),
-              ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: passwordController,
-              decoration: const InputDecoration(
-                labelText: 'Password',
-                prefixIcon: Icon(LucideIcons.lock),
-              ),
-              obscureText: true,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              context.read<AuthCubit>().linkToEmail(
-                email: emailController.text.trim(),
-                password: passwordController.text,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.orbPurple,
-            ),
-            child: const Text('Link'),
-          ),
-        ],
-      ),
-    );
   }
 
   void _logout(BuildContext context) {
